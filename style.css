@@ -20,6 +20,12 @@
   --series-3: #1baf7a;
   --series-4: #eda100;
   --series-5: #e87ba4;
+
+  /* sequential blue ramp, used for the weekly heatmap */
+  --heat-0: #f3f2ef;
+  --heat-1: #cde2fb;
+  --heat-2: #6da7ec;
+  --heat-3: #2a78d6;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -34,6 +40,10 @@
     --series-3: #199e70;
     --series-4: #c98500;
     --series-5: #d55181;
+    --heat-0: #232320;
+    --heat-1: #184f95;
+    --heat-2: #2a78d6;
+    --heat-3: #3987e5;
   }
 }
 :root[data-theme="dark"] {
@@ -47,6 +57,10 @@
   --series-3: #199e70;
   --series-4: #c98500;
   --series-5: #d55181;
+  --heat-0: #232320;
+  --heat-1: #184f95;
+  --heat-2: #2a78d6;
+  --heat-3: #3987e5;
 }
 
 * { box-sizing: border-box; }
@@ -489,3 +503,60 @@ th {
   padding: 16px 12px;
   margin: 0;
 }
+
+/* --- weekly class x day heatmap --- */
+
+.heatmap {
+  border-collapse: separate;
+  border-spacing: 3px;
+}
+
+.heatmap th {
+  border-bottom: none;
+  text-align: center;
+  padding: 4px 10px;
+  font-size: 11px;
+}
+
+.heatmap th .day-num {
+  display: block;
+  font-size: 10px;
+  color: var(--viz-muted);
+  font-weight: 400;
+}
+
+.heatmap-rowlabel {
+  border-bottom: none;
+  text-align: right;
+  padding: 6px 10px;
+  font-size: 12px;
+  color: var(--viz-text-secondary);
+  white-space: nowrap;
+}
+
+.heat-cell {
+  border-bottom: none;
+  text-align: center;
+  min-width: 34px;
+  height: 30px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.heat-cell.heat-0 { background: var(--heat-0); color: var(--viz-muted); }
+.heat-cell.heat-1 { background: var(--heat-1); color: var(--viz-text-primary); }
+.heat-cell.heat-2 { background: var(--heat-2); color: var(--viz-text-primary); }
+.heat-cell.heat-3 { background: var(--heat-3); color: #ffffff; }
+
+.heat-swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+.heat-swatch.heat-0 { background: var(--heat-0); border: 1px solid var(--border); }
+.heat-swatch.heat-1 { background: var(--heat-1); }
+.heat-swatch.heat-2 { background: var(--heat-2); }
+.heat-swatch.heat-3 { background: var(--heat-3); }

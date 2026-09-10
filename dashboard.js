@@ -60,50 +60,50 @@ function makeSvg(width, height) {
   return svg;
 }
 
-// Stacked column chart for the current week (2 series: Cold-call / Voluntary)
-function renderWeekChart(container, days) {
-  const width = 640, height = 220;
-  const marginBottom = 26, marginTop = 22, marginLeft = 10, marginRight = 10;
-  const plotH = height - marginTop - marginBottom;
-  const maxTotal = Math.max(1, ...days.map(d => d.coldCall + d.voluntary));
-  const barSlot = (width - marginLeft - marginRight) / days.length;
-  const barWidth = Math.min(24, barSlot * 0.5);
-  const baselineY = height - marginBottom;
+// Class (rows) x day-of-week (columns) heatmap grid for the current week.
+// Built as an HTML table so labels never clip and it scrolls on narrow screens.
+function renderWeekGrid(container, weekDates, classes, weekEntries) {
+  if (classes.length === 0) {
+    container.innerHTML = '<p class="hbar-empty">No data yet</p>';
+    return;
+  }
 
-  const svg = makeSvg(width, height);
-
-  svg.appendChild(svgEl("line", {
-    x1: marginLeft, x2: width - marginRight, y1: baselineY, y2: baselineY,
-    class: "axis-line",
+  const dayHeaders = weekDates.map(d => ({
+    weekday: d.toLocaleDateString("en-US", { weekday: "short" }),
+    dayNum: d.getDate(),
+    iso: fmtISO(d),
   }));
 
-  days.forEach((d, i) => {
-    const cx = marginLeft + barSlot * i + barSlot / 2;
-    const x = cx - barWidth / 2;
-    const total = d.coldCall + d.voluntary;
-    const ccH = total ? (d.coldCall / maxTotal) * plotH : 0;
-    const volH = total ? (d.voluntary / maxTotal) * plotH : 0;
-    const gap = total > 0 && d.coldCall > 0 && d.voluntary > 0 ? 2 : 0;
+  const rows = classes.map(cls => {
+    const cells = dayHeaders.map(h =>
+      weekEntries.filter(e => e.className === cls && e.date === h.iso).length
+    );
+    return { cls, cells, total: cells.reduce((a, b) => a + b, 0) };
+  }).sort((a, b) => b.total - a.total || a.cls.localeCompare(b.cls));
 
-    if (d.coldCall > 0) {
-      const y = baselineY - ccH;
-      svg.appendChild(roundedBar(x, y, barWidth, ccH, "series-1", d.voluntary === 0));
-    }
-    if (d.voluntary > 0) {
-      const y = baselineY - ccH - volH - gap;
-      svg.appendChild(roundedBar(x, y, barWidth, volH, "series-2", true));
-    }
+  function heatClass(n) {
+    if (n === 0) return "heat-0";
+    if (n === 1) return "heat-1";
+    if (n === 2) return "heat-2";
+    return "heat-3";
+  }
 
-    if (total > 0) {
-      const topY = baselineY - ccH - volH - gap - 6;
-      svg.appendChild(textEl(cx, topY, String(total), "value-label", "middle"));
-    }
-
-    svg.appendChild(textEl(cx, height - 8, d.label, "axis-label", "middle"));
-  });
-
-  container.innerHTML = "";
-  container.appendChild(svg);
+  container.innerHTML = `
+    <table class="heatmap">
+      <thead>
+        <tr>
+          <th>Class</th>
+          ${dayHeaders.map(h => `<th>${h.weekday}<span class="day-num">${h.dayNum}</span></th>`).join("")}
+        </tr>
+      </thead>
+      <tbody>
+        ${rows.map(r => `
+          <tr>
+            <td class="heatmap-rowlabel">${escapeHtml(r.cls)}</td>
+            ${r.cells.map(n => `<td class="heat-cell ${heatClass(n)}">${n > 0 ? n : ""}</td>`).join("")}
+          </tr>`).join("")}
+      </tbody>
+    </table>`;
 }
 
 // Rounded bar: rounds the top (data-end); square at baseline. If `roundBottomToo`
@@ -265,16 +265,6 @@ function render() {
   document.getElementById("week-range").textContent =
     `${shortDate(weekDates[0])} – ${shortDate(weekDates[6])}`;
 
-  const days = weekDates.map((d, i) => {
-    const ds = weekDateStrs[i];
-    const dayEntries = scoped.filter(e => e.date === ds);
-    return {
-      label: d.toLocaleDateString("en-US", { weekday: "short" }),
-      coldCall: dayEntries.filter(e => e.type === "Cold-call").length,
-      voluntary: dayEntries.filter(e => e.type === "Voluntary").length,
-    };
-  });
-
   const weekEntries = scoped.filter(e => weekDateStrs.includes(e.date));
   const weekColdCall = weekEntries.filter(e => e.type === "Cold-call").length;
   const weekVoluntary = weekEntries.filter(e => e.type === "Voluntary").length;
@@ -285,11 +275,14 @@ function render() {
     statTile(weekVoluntary, "Voluntary");
 
   document.getElementById("week-legend").innerHTML = `
-    <span class="legend-item"><span class="swatch series-1"></span>Cold-call</span>
-    <span class="legend-item"><span class="swatch series-2"></span>Voluntary</span>
+    <span class="legend-item"><span class="heat-swatch heat-0"></span>0</span>
+    <span class="legend-item"><span class="heat-swatch heat-1"></span>1</span>
+    <span class="legend-item"><span class="heat-swatch heat-2"></span>2</span>
+    <span class="legend-item"><span class="heat-swatch heat-3"></span>3+</span>
   `;
 
-  renderWeekChart(document.getElementById("week-chart"), days);
+  const classesThisWeek = selectedClass ? [selectedClass] : allClasses;
+  renderWeekGrid(document.getElementById("week-grid"), weekDates, classesThisWeek, weekEntries);
 
   // --- Overall (scoped to the class filter) ---
   const allDates = scoped.map(e => e.date).sort();
