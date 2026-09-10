@@ -246,17 +246,10 @@ function render() {
   emptyEl.hidden = true;
   contentEl.hidden = false;
 
-  const classFilterEl = document.getElementById("class-filter");
   const allClasses = [...new Set(entries.map(e => e.className))].sort();
-  const previousSelection = classFilterEl.value;
-  classFilterEl.innerHTML = '<option value="">All classes</option>' +
-    allClasses.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join("");
-  classFilterEl.value = allClasses.includes(previousSelection) ? previousSelection : "";
+  const scoped = entries;
 
-  const selectedClass = classFilterEl.value;
-  const scoped = selectedClass ? entries.filter(e => e.className === selectedClass) : entries;
-
-  // --- This week (scoped to the class filter) ---
+  // --- This week ---
   const today = new Date();
   const weekStart = startOfWeek(today);
   const weekDates = [...Array(7)].map((_, i) => addDays(weekStart, i));
@@ -281,21 +274,19 @@ function render() {
     <span class="legend-item"><span class="heat-swatch heat-3"></span>3+</span>
   `;
 
-  const classesThisWeek = selectedClass ? [selectedClass] : allClasses;
-  renderWeekGrid(document.getElementById("week-grid"), weekDates, classesThisWeek, weekEntries);
+  renderWeekGrid(document.getElementById("week-grid"), weekDates, allClasses, weekEntries);
 
-  // --- Overall (scoped to the class filter) ---
+  // --- Overall ---
   const allDates = scoped.map(e => e.date).sort();
   document.getElementById("overall-range").textContent =
     allDates.length ? `Since ${shortDate(parseDate(allDates[0]))}` : "";
 
   const coldCallTotal = scoped.filter(e => e.type === "Cold-call").length;
   const voluntaryTotal = scoped.filter(e => e.type === "Voluntary").length;
-  const scopedClassCount = new Set(scoped.map(e => e.className)).size;
 
   document.getElementById("overall-stats").innerHTML =
     statTile(scoped.length, "Total entries") +
-    statTile(scopedClassCount, "Classes tracked") +
+    statTile(allClasses.length, "Classes tracked") +
     statTile(coldCallTotal, "Cold-calls") +
     statTile(voluntaryTotal, "Voluntary");
 
@@ -329,11 +320,9 @@ function render() {
 
   renderHBarChart(document.getElementById("subtype-chart"), subtypeRows, "series-2");
 
-  // Breakdown by class table (always all classes, not scoped to the filter)
+  // Breakdown by class table
   renderClassBreakdown(document.getElementById("class-breakdown"), entries, allClasses);
 }
-
-document.getElementById("class-filter").addEventListener("change", render);
 
 document.getElementById("view-tabs").addEventListener("click", (e) => {
   const btn = e.target.closest(".tab-btn");
