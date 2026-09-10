@@ -14,12 +14,6 @@
   --viz-text-primary: #0b0b0b;
   --viz-text-secondary: #52514e;
   --viz-muted: #898781;
-  --viz-axis: #c3c2b7;
-  --series-1: #2a78d6;
-  --series-2: #eb6834;
-  --series-3: #1baf7a;
-  --series-4: #eda100;
-  --series-5: #e87ba4;
 
   /* sequential blue ramp, used for the weekly heatmap */
   --heat-0: #f3f2ef;
@@ -34,12 +28,6 @@
     --viz-text-primary: #ffffff;
     --viz-text-secondary: #c3c2b7;
     --viz-muted: #898781;
-    --viz-axis: #383835;
-    --series-1: #3987e5;
-    --series-2: #d95926;
-    --series-3: #199e70;
-    --series-4: #c98500;
-    --series-5: #d55181;
     --heat-0: #232320;
     --heat-1: #184f95;
     --heat-2: #2a78d6;
@@ -51,12 +39,6 @@
   --viz-text-primary: #ffffff;
   --viz-text-secondary: #c3c2b7;
   --viz-muted: #898781;
-  --viz-axis: #383835;
-  --series-1: #3987e5;
-  --series-2: #d95926;
-  --series-3: #199e70;
-  --series-4: #c98500;
-  --series-5: #d55181;
   --heat-0: #232320;
   --heat-1: #184f95;
   --heat-2: #2a78d6;
@@ -379,11 +361,6 @@ th {
   color: var(--text);
 }
 
-.chart {
-  background: var(--viz-surface);
-  border-radius: 8px;
-}
-
 .legend {
   display: flex;
   gap: 14px;
@@ -441,23 +418,6 @@ th {
   border-color: var(--border);
 }
 .pace-pill.pace-none .pace-dot { background: var(--border); }
-
-.viz-svg { display: block; width: 100%; }
-
-.bar-fill.series-1 { fill: var(--series-1); }
-
-.axis-line { stroke: var(--viz-axis); stroke-width: 1; }
-
-.axis-label {
-  fill: var(--viz-muted);
-  font-size: 11px;
-}
-
-.value-label {
-  fill: var(--viz-text-secondary);
-  font-size: 12px;
-  font-weight: 600;
-}
 
 .hbar-empty {
   color: var(--viz-muted);

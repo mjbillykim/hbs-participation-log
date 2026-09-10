@@ -40,26 +40,6 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
-// --- SVG chart helpers -----------------------------------------------
-
-const NS = "http://www.w3.org/2000/svg";
-
-function svgEl(tag, attrs) {
-  const el = document.createElementNS(NS, tag);
-  for (const k in attrs) el.setAttribute(k, attrs[k]);
-  return el;
-}
-
-function makeSvg(width, height) {
-  const svg = svgEl("svg", {
-    viewBox: `0 0 ${width} ${height}`,
-    width: "100%",
-    height,
-    class: "viz-svg",
-  });
-  return svg;
-}
-
 // Class (rows) x day-of-week (columns) heatmap grid for the current week.
 // Built as an HTML table so labels never clip and it scrolls on narrow screens.
 function renderWeekGrid(container, weekDates, classes, weekEntries) {
@@ -104,64 +84,6 @@ function renderWeekGrid(container, weekDates, classes, weekEntries) {
           </tr>`).join("")}
       </tbody>
     </table>`;
-}
-
-// Rounded bar: rounds the top (data-end); square at baseline. If `roundBottomToo`
-// is false, only the top gets the radius (used when a segment sits under another).
-function roundedBar(x, y, w, h, colorClass, roundTop) {
-  const r = roundTop ? Math.min(4, h, w / 2) : 0;
-  let d;
-  if (r > 0) {
-    d = `M${x},${y + h} L${x},${y + r} Q${x},${y} ${x + r},${y} L${x + w - r},${y} Q${x + w},${y} ${x + w},${y + r} L${x + w},${y + h} Z`;
-  } else {
-    d = `M${x},${y} L${x + w},${y} L${x + w},${y + h} L${x},${y + h} Z`;
-  }
-  return svgEl("path", { d, class: `bar-fill ${colorClass}` });
-}
-
-function textEl(x, y, str, className, anchor) {
-  const t = svgEl("text", { x, y, class: className, "text-anchor": anchor || "start" });
-  t.textContent = str;
-  return t;
-}
-
-// Vertical bar chart, single series, value on cap, category labels below.
-function renderTrendChart(container, weeks) {
-  const width = 640;
-  const height = 200;
-  const marginBottom = 24, marginTop = 22, marginLeft = 10, marginRight = 10;
-  const plotH = height - marginTop - marginBottom;
-  const maxVal = Math.max(1, ...weeks.map(w => w.total));
-  const n = Math.max(weeks.length, 1);
-  const barSlot = (width - marginLeft - marginRight) / n;
-  const barWidth = Math.min(24, barSlot * 0.5);
-  const baselineY = height - marginBottom;
-  const rotateLabels = weeks.length > 8;
-
-  const svg = makeSvg(width, height);
-  svg.appendChild(svgEl("line", {
-    x1: marginLeft, x2: width - marginRight, y1: baselineY, y2: baselineY,
-    class: "axis-line",
-  }));
-
-  weeks.forEach((w, i) => {
-    const cx = marginLeft + barSlot * i + barSlot / 2;
-    const x = cx - barWidth / 2;
-    const h = (w.total / maxVal) * plotH;
-    const y = baselineY - h;
-    svg.appendChild(roundedBar(x, y, barWidth, Math.max(h, 0), "series-1", true));
-    svg.appendChild(textEl(cx, y - 6, String(w.total), "value-label", "middle"));
-
-    const label = svgEl("text", {
-      x: cx, y: height - 8, class: "axis-label", "text-anchor": rotateLabels ? "end" : "middle",
-    });
-    label.textContent = w.label;
-    if (rotateLabels) label.setAttribute("transform", `rotate(-35 ${cx} ${height - 8})`);
-    svg.appendChild(label);
-  });
-
-  container.innerHTML = "";
-  container.appendChild(svg);
 }
 
 function statTile(value, label) {
@@ -306,18 +228,6 @@ function render() {
     statTile(allClasses.length, "Classes tracked") +
     statTile(coldCallTotal, "Cold-calls") +
     statTile(voluntaryTotal, "Voluntary");
-
-  // Weekly trend across all history
-  const weekMap = new Map();
-  participationEntries.forEach(e => {
-    const wk = fmtISO(startOfWeek(parseDate(e.date)));
-    weekMap.set(wk, (weekMap.get(wk) || 0) + 1);
-  });
-  const weeks = [...weekMap.entries()]
-    .sort((a, b) => a[0].localeCompare(b[0]))
-    .map(([wk, total]) => ({ label: shortDate(parseDate(wk)), total }));
-
-  renderTrendChart(document.getElementById("trend-chart"), weeks);
 
   // Breakdown by class table
   renderClassBreakdown(document.getElementById("class-breakdown"), participationEntries, allClasses);
