@@ -26,14 +26,20 @@
   </section>
 
   <div id="dashboard-content" hidden>
-    <div class="filter-bar">
-      <label for="class-filter">Class</label>
-      <select id="class-filter">
-        <option value="">All classes</option>
-      </select>
+    <div class="control-bar">
+      <div class="view-tabs" id="view-tabs">
+        <button type="button" class="tab-btn" data-view="week" aria-current="page">This week</button>
+        <button type="button" class="tab-btn" data-view="overall">Overall</button>
+      </div>
+      <div class="filter-bar">
+        <label for="class-filter">Class</label>
+        <select id="class-filter">
+          <option value="">All classes</option>
+        </select>
+      </div>
     </div>
 
-    <section class="card">
+    <section class="card view-panel" id="view-week">
       <div class="section-header">
         <h2>This week</h2>
         <span class="section-sub" id="week-range"></span>
@@ -48,7 +54,7 @@
       </div>
     </section>
 
-    <section class="card">
+    <section class="card view-panel" id="view-overall" hidden>
       <div class="section-header">
         <h2>Overall</h2>
         <span class="section-sub" id="overall-range"></span>

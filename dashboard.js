@@ -342,5 +342,17 @@ function render() {
 
 document.getElementById("class-filter").addEventListener("change", render);
 
+document.getElementById("view-tabs").addEventListener("click", (e) => {
+  const btn = e.target.closest(".tab-btn");
+  if (!btn) return;
+  const view = btn.dataset.view;
+  document.querySelectorAll(".tab-btn").forEach(b => {
+    if (b === btn) b.setAttribute("aria-current", "page");
+    else b.removeAttribute("aria-current");
+  });
+  document.getElementById("view-week").hidden = view !== "week";
+  document.getElementById("view-overall").hidden = view !== "overall";
+});
+
 render();
 window.addEventListener("storage", render);
