@@ -290,6 +290,25 @@ th {
   color: #fff;
 }
 
+.filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.filter-bar label {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.filter-bar select {
+  width: auto;
+  font-size: 13px;
+  padding: 6px 8px;
+}
+
 .section-header {
   display: flex;
   justify-content: space-between;

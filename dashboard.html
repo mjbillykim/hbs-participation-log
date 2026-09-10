@@ -26,6 +26,13 @@
   </section>
 
   <div id="dashboard-content" hidden>
+    <div class="filter-bar">
+      <label for="class-filter">Class</label>
+      <select id="class-filter">
+        <option value="">All classes</option>
+      </select>
+    </div>
+
     <section class="card">
       <div class="section-header">
         <h2>This week</h2>
@@ -68,6 +75,14 @@
           </div>
           <div id="subtype-chart" class="chart"></div>
         </div>
+      </div>
+
+      <div class="chart-block">
+        <div class="chart-title-row">
+          <h3>Breakdown by class</h3>
+          <span class="section-sub">Always shows all classes, regardless of the filter above</span>
+        </div>
+        <div id="class-breakdown" class="table-wrap"></div>
       </div>
     </section>
   </div>

@@ -187,6 +187,50 @@ function statTile(value, label) {
   return `<div class="stat"><div class="num">${value}</div><div class="label">${escapeHtml(label)}</div></div>`;
 }
 
+const SUBTYPES = ["Superficial", "Quality comment", "Calculation walkthrough"];
+
+function renderClassBreakdown(container, entries, allClasses) {
+  if (allClasses.length === 0) {
+    container.innerHTML = '<p class="hbar-empty">No data yet</p>';
+    return;
+  }
+
+  const rows = allClasses.map(cls => {
+    const classEntries = entries.filter(e => e.className === cls);
+    const coldCall = classEntries.filter(e => e.type === "Cold-call").length;
+    const voluntary = classEntries.filter(e => e.type === "Voluntary").length;
+    const subtypeCounts = SUBTYPES.map(s => classEntries.filter(e => e.subtype === s).length);
+    return { cls, total: classEntries.length, coldCall, voluntary, subtypeCounts };
+  }).sort((a, b) => b.total - a.total);
+
+  container.innerHTML = `
+    <table>
+      <thead>
+        <tr>
+          <th>Class</th>
+          <th>Entries</th>
+          <th>Cold-call</th>
+          <th>Voluntary</th>
+          <th>Superficial</th>
+          <th>Quality comment</th>
+          <th>Calc. walkthrough</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows.map(r => `
+          <tr>
+            <td>${escapeHtml(r.cls)}</td>
+            <td>${r.total}</td>
+            <td>${r.coldCall}</td>
+            <td>${r.voluntary}</td>
+            <td>${r.subtypeCounts[0]}</td>
+            <td>${r.subtypeCounts[1]}</td>
+            <td>${r.subtypeCounts[2]}</td>
+          </tr>`).join("")}
+      </tbody>
+    </table>`;
+}
+
 // --- Main render --------------------------------------------------------
 
 function render() {
@@ -202,7 +246,17 @@ function render() {
   emptyEl.hidden = true;
   contentEl.hidden = false;
 
-  // --- This week ---
+  const classFilterEl = document.getElementById("class-filter");
+  const allClasses = [...new Set(entries.map(e => e.className))].sort();
+  const previousSelection = classFilterEl.value;
+  classFilterEl.innerHTML = '<option value="">All classes</option>' +
+    allClasses.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join("");
+  classFilterEl.value = allClasses.includes(previousSelection) ? previousSelection : "";
+
+  const selectedClass = classFilterEl.value;
+  const scoped = selectedClass ? entries.filter(e => e.className === selectedClass) : entries;
+
+  // --- This week (scoped to the class filter) ---
   const today = new Date();
   const weekStart = startOfWeek(today);
   const weekDates = [...Array(7)].map((_, i) => addDays(weekStart, i));
@@ -213,7 +267,7 @@ function render() {
 
   const days = weekDates.map((d, i) => {
     const ds = weekDateStrs[i];
-    const dayEntries = entries.filter(e => e.date === ds);
+    const dayEntries = scoped.filter(e => e.date === ds);
     return {
       label: d.toLocaleDateString("en-US", { weekday: "short" }),
       coldCall: dayEntries.filter(e => e.type === "Cold-call").length,
@@ -221,7 +275,7 @@ function render() {
     };
   });
 
-  const weekEntries = entries.filter(e => weekDateStrs.includes(e.date));
+  const weekEntries = scoped.filter(e => weekDateStrs.includes(e.date));
   const weekColdCall = weekEntries.filter(e => e.type === "Cold-call").length;
   const weekVoluntary = weekEntries.filter(e => e.type === "Voluntary").length;
 
@@ -237,24 +291,24 @@ function render() {
 
   renderWeekChart(document.getElementById("week-chart"), days);
 
-  // --- Overall ---
-  const allDates = entries.map(e => e.date).sort();
+  // --- Overall (scoped to the class filter) ---
+  const allDates = scoped.map(e => e.date).sort();
   document.getElementById("overall-range").textContent =
     allDates.length ? `Since ${shortDate(parseDate(allDates[0]))}` : "";
 
-  const classSet = new Set(entries.map(e => e.className));
-  const coldCallTotal = entries.filter(e => e.type === "Cold-call").length;
-  const voluntaryTotal = entries.filter(e => e.type === "Voluntary").length;
+  const coldCallTotal = scoped.filter(e => e.type === "Cold-call").length;
+  const voluntaryTotal = scoped.filter(e => e.type === "Voluntary").length;
+  const scopedClassCount = new Set(scoped.map(e => e.className)).size;
 
   document.getElementById("overall-stats").innerHTML =
-    statTile(entries.length, "Total entries") +
-    statTile(classSet.size, "Classes tracked") +
+    statTile(scoped.length, "Total entries") +
+    statTile(scopedClassCount, "Classes tracked") +
     statTile(coldCallTotal, "Cold-calls") +
     statTile(voluntaryTotal, "Voluntary");
 
   // Weekly trend across all history
   const weekMap = new Map();
-  entries.forEach(e => {
+  scoped.forEach(e => {
     const wk = fmtISO(startOfWeek(parseDate(e.date)));
     weekMap.set(wk, (weekMap.get(wk) || 0) + 1);
   });
@@ -264,7 +318,7 @@ function render() {
 
   renderTrendChart(document.getElementById("trend-chart"), weeks);
 
-  // By class
+  // By class (always all classes, not scoped to the filter)
   const classCounts = new Map();
   entries.forEach(e => classCounts.set(e.className, (classCounts.get(e.className) || 0) + 1));
   const classRows = [...classCounts.entries()]
@@ -273,15 +327,20 @@ function render() {
 
   renderHBarChart(document.getElementById("class-chart"), classRows, "series-1");
 
-  // Voluntary subtype breakdown
+  // Voluntary subtype breakdown (scoped to the filter)
   const subtypeOrder = ["Superficial", "Quality comment", "Calculation walkthrough"];
   const subtypeRows = subtypeOrder.map(label => ({
     label,
-    value: entries.filter(e => e.type === "Voluntary" && e.subtype === label).length,
+    value: scoped.filter(e => e.type === "Voluntary" && e.subtype === label).length,
   }));
 
   renderHBarChart(document.getElementById("subtype-chart"), subtypeRows, "series-2");
+
+  // Breakdown by class table (always all classes, not scoped to the filter)
+  renderClassBreakdown(document.getElementById("class-breakdown"), entries, allClasses);
 }
+
+document.getElementById("class-filter").addEventListener("change", render);
 
 render();
 window.addEventListener("storage", render);
