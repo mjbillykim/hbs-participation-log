@@ -164,25 +164,6 @@ function renderTrendChart(container, weeks) {
   container.appendChild(svg);
 }
 
-// Horizontal bar chart, single hue, sorted desc, value at the tip.
-// Built as HTML rows (not SVG text) so long labels wrap instead of clipping.
-function renderHBarChart(container, rows, colorClass) {
-  if (rows.length === 0) {
-    container.innerHTML = '<p class="hbar-empty">No data yet</p>';
-    return;
-  }
-  const maxVal = Math.max(1, ...rows.map(r => r.value));
-  container.innerHTML = rows.map(r => {
-    const pct = Math.max((r.value / maxVal) * 100, 3);
-    return `
-      <div class="hbar-row">
-        <div class="hbar-label">${escapeHtml(r.label)}</div>
-        <div class="hbar-track"><div class="hbar-fill ${colorClass}" style="width:${pct}%"></div></div>
-        <div class="hbar-value">${r.value}</div>
-      </div>`;
-  }).join("");
-}
-
 function statTile(value, label) {
   return `<div class="stat"><div class="num">${value}</div><div class="label">${escapeHtml(label)}</div></div>`;
 }
@@ -231,6 +212,38 @@ function renderClassBreakdown(container, entries, allClasses) {
     </table>`;
 }
 
+// Speaking pace: for each class, look at the most recent 3 logged sessions
+// (participation or not) and flag whether you spoke in at least one of them —
+// the "once every 2-3 classes" target.
+function computePace(entries, allClasses) {
+  return allClasses.map(cls => {
+    const classEntries = entries
+      .filter(e => e.className === cls)
+      .sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id);
+    const recent = classEntries.slice(0, 3);
+    if (recent.length === 0) return { cls, status: "none" };
+    const spoke = recent.some(e => e.type !== "No participation");
+    return { cls, status: spoke ? "good" : "due" };
+  });
+}
+
+function renderPace(container, entries, allClasses) {
+  const rows = computePace(entries, allClasses);
+  if (rows.length === 0) {
+    container.innerHTML = '<p class="hbar-empty">No data yet</p>';
+    return;
+  }
+  container.innerHTML = rows.map(r => {
+    const text = r.status === "good" ? "On pace"
+      : r.status === "due" ? "Speak soon"
+      : "No log yet";
+    return `
+      <span class="pace-pill pace-${r.status}">
+        <span class="pace-dot"></span>${escapeHtml(r.cls)} — ${text}
+      </span>`;
+  }).join("");
+}
+
 // --- Main render --------------------------------------------------------
 
 function render() {
@@ -246,8 +259,11 @@ function render() {
   emptyEl.hidden = true;
   contentEl.hidden = false;
 
+  // `entries` includes "No participation" rows (attended, didn't speak) — those
+  // power the speaking-pace check below but are excluded from every other stat
+  // and chart, which only ever meant actual participation.
   const allClasses = [...new Set(entries.map(e => e.className))].sort();
-  const scoped = entries;
+  const participationEntries = entries.filter(e => e.type !== "No participation");
 
   // --- This week ---
   const today = new Date();
@@ -258,7 +274,7 @@ function render() {
   document.getElementById("week-range").textContent =
     `${shortDate(weekDates[0])} – ${shortDate(weekDates[6])}`;
 
-  const weekEntries = scoped.filter(e => weekDateStrs.includes(e.date));
+  const weekEntries = participationEntries.filter(e => weekDateStrs.includes(e.date));
   const weekColdCall = weekEntries.filter(e => e.type === "Cold-call").length;
   const weekVoluntary = weekEntries.filter(e => e.type === "Voluntary").length;
 
@@ -275,24 +291,25 @@ function render() {
   `;
 
   renderWeekGrid(document.getElementById("week-grid"), weekDates, allClasses, weekEntries);
+  renderPace(document.getElementById("pace-list"), entries, allClasses);
 
   // --- Overall ---
-  const allDates = scoped.map(e => e.date).sort();
+  const allDates = participationEntries.map(e => e.date).sort();
   document.getElementById("overall-range").textContent =
     allDates.length ? `Since ${shortDate(parseDate(allDates[0]))}` : "";
 
-  const coldCallTotal = scoped.filter(e => e.type === "Cold-call").length;
-  const voluntaryTotal = scoped.filter(e => e.type === "Voluntary").length;
+  const coldCallTotal = participationEntries.filter(e => e.type === "Cold-call").length;
+  const voluntaryTotal = participationEntries.filter(e => e.type === "Voluntary").length;
 
   document.getElementById("overall-stats").innerHTML =
-    statTile(scoped.length, "Total entries") +
+    statTile(participationEntries.length, "Total entries") +
     statTile(allClasses.length, "Classes tracked") +
     statTile(coldCallTotal, "Cold-calls") +
     statTile(voluntaryTotal, "Voluntary");
 
   // Weekly trend across all history
   const weekMap = new Map();
-  scoped.forEach(e => {
+  participationEntries.forEach(e => {
     const wk = fmtISO(startOfWeek(parseDate(e.date)));
     weekMap.set(wk, (weekMap.get(wk) || 0) + 1);
   });
@@ -302,26 +319,8 @@ function render() {
 
   renderTrendChart(document.getElementById("trend-chart"), weeks);
 
-  // By class (always all classes, not scoped to the filter)
-  const classCounts = new Map();
-  entries.forEach(e => classCounts.set(e.className, (classCounts.get(e.className) || 0) + 1));
-  const classRows = [...classCounts.entries()]
-    .sort((a, b) => b[1] - a[1])
-    .map(([label, value]) => ({ label, value }));
-
-  renderHBarChart(document.getElementById("class-chart"), classRows, "series-1");
-
-  // Voluntary subtype breakdown (scoped to the filter)
-  const subtypeOrder = ["Superficial", "Quality comment", "Calculation walkthrough"];
-  const subtypeRows = subtypeOrder.map(label => ({
-    label,
-    value: scoped.filter(e => e.type === "Voluntary" && e.subtype === label).length,
-  }));
-
-  renderHBarChart(document.getElementById("subtype-chart"), subtypeRows, "series-2");
-
   // Breakdown by class table
-  renderClassBreakdown(document.getElementById("class-breakdown"), entries, allClasses);
+  renderClassBreakdown(document.getElementById("class-breakdown"), participationEntries, allClasses);
 }
 
 document.getElementById("view-tabs").addEventListener("click", (e) => {

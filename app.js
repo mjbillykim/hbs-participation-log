@@ -33,6 +33,12 @@ function typeLabel(entry) {
   return entry.type;
 }
 
+function badgeClass(type) {
+  if (type === "Cold-call") return "coldcall";
+  if (type === "Voluntary") return "voluntary";
+  return "noparticipation";
+}
+
 function escapeHtml(str) {
   const div = document.createElement("div");
   div.textContent = str;
@@ -62,7 +68,7 @@ function render() {
     <tr>
       <td>${escapeHtml(e.date)}</td>
       <td>${escapeHtml(e.className)}</td>
-      <td><span class="badge ${e.type === "Cold-call" ? "coldcall" : "voluntary"}">${escapeHtml(typeLabel(e))}</span></td>
+      <td><span class="badge ${badgeClass(e.type)}">${escapeHtml(typeLabel(e))}</span></td>
       <td>${escapeHtml(e.notes || "")}</td>
       <td><button class="btn small" data-delete="${e.id}">Delete</button></td>
     </tr>
