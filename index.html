@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HBS Participation Log</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>HBS Participation Log</h1>
+    <p class="subtitle">Track your own class contributions across courses.</p>
+  </header>
+
+  <section class="stats" id="stats"></section>
+
+  <section class="card">
+    <h2>Add entry</h2>
+    <form id="entry-form">
+      <div class="field-row">
+        <div class="field">
+          <label for="date">Date</label>
+          <input type="date" id="date" required>
+        </div>
+        <div class="field">
+          <label for="class-name">Class / Course</label>
+          <input type="text" id="class-name" list="class-options" placeholder="e.g. FIN1, Strategy" required>
+          <datalist id="class-options"></datalist>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Type</label>
+        <div class="radio-row">
+          <label class="radio"><input type="radio" name="type" value="Cold-call" checked> Cold-call</label>
+          <label class="radio"><input type="radio" name="type" value="Voluntary"> Voluntary</label>
+        </div>
+      </div>
+
+      <div class="field" id="subtype-field" hidden>
+        <label for="subtype">Voluntary type</label>
+        <select id="subtype">
+          <option value="">Select one…</option>
+          <option value="Superficial">Superficial</option>
+          <option value="Quality comment">Quality comment</option>
+          <option value="Calculation walkthrough">Calculation walkthrough</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="notes">Notes (optional)</label>
+        <textarea id="notes" rows="2" placeholder="What did you say?"></textarea>
+      </div>
+
+      <button type="submit" class="btn primary">Add entry</button>
+    </form>
+  </section>
+
+  <section class="card">
+    <div class="log-header">
+      <h2>Log</h2>
+      <div class="filters">
+        <select id="filter-class">
+          <option value="">All classes</option>
+        </select>
+        <select id="filter-type">
+          <option value="">All types</option>
+          <option value="Cold-call">Cold-call</option>
+          <option value="Voluntary">Voluntary</option>
+        </select>
+        <button type="button" class="btn" id="export-btn">Export CSV</button>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table id="log-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Class</th>
+            <th>Type</th>
+            <th>Notes</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="log-body"></tbody>
+      </table>
+      <p id="empty-state" class="empty-state" hidden>No entries yet — add your first one above.</p>
+    </div>
+  </section>
+</div>
+<script src="app.js"></script>
+</body>
+</html>
