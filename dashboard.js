@@ -203,7 +203,8 @@ function render() {
     <span class="legend-item"><span class="heat-swatch heat-yes"></span>Spoke</span>
   `;
 
-  renderWeekGrid(document.getElementById("week-grid"), weekDates, allClasses, weekEntries);
+  const weekdayDates = weekDates.slice(0, 5); // Mon-Fri only, no weekend classes
+  renderWeekGrid(document.getElementById("week-grid"), weekdayDates, allClasses, weekEntries);
   renderPace(document.getElementById("pace-list"), entries, allClasses);
 
   // --- Overall ---
