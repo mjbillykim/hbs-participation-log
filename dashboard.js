@@ -56,17 +56,10 @@ function renderWeekGrid(container, weekDates, classes, weekEntries) {
 
   const rows = classes.map(cls => {
     const cells = dayHeaders.map(h =>
-      weekEntries.filter(e => e.className === cls && e.date === h.iso).length
+      weekEntries.some(e => e.className === cls && e.date === h.iso)
     );
-    return { cls, cells, total: cells.reduce((a, b) => a + b, 0) };
+    return { cls, cells, total: cells.filter(Boolean).length };
   }).sort((a, b) => b.total - a.total || a.cls.localeCompare(b.cls));
-
-  function heatClass(n) {
-    if (n === 0) return "heat-0";
-    if (n === 1) return "heat-1";
-    if (n === 2) return "heat-2";
-    return "heat-3";
-  }
 
   container.innerHTML = `
     <table class="heatmap">
@@ -80,7 +73,7 @@ function renderWeekGrid(container, weekDates, classes, weekEntries) {
         ${rows.map(r => `
           <tr>
             <td class="heatmap-rowlabel">${escapeHtml(r.cls)}</td>
-            ${r.cells.map(n => `<td class="heat-cell ${heatClass(n)}">${n > 0 ? n : ""}</td>`).join("")}
+            ${r.cells.map(spoke => `<td class="heat-cell ${spoke ? "heat-yes" : "heat-no"}">${spoke ? "✓" : ""}</td>`).join("")}
           </tr>`).join("")}
       </tbody>
     </table>`;
@@ -206,10 +199,8 @@ function render() {
     statTile(weekVoluntary, "Voluntary");
 
   document.getElementById("week-legend").innerHTML = `
-    <span class="legend-item"><span class="heat-swatch heat-0"></span>0</span>
-    <span class="legend-item"><span class="heat-swatch heat-1"></span>1</span>
-    <span class="legend-item"><span class="heat-swatch heat-2"></span>2</span>
-    <span class="legend-item"><span class="heat-swatch heat-3"></span>3+</span>
+    <span class="legend-item"><span class="heat-swatch heat-no"></span>Didn't speak</span>
+    <span class="legend-item"><span class="heat-swatch heat-yes"></span>Spoke</span>
   `;
 
   renderWeekGrid(document.getElementById("week-grid"), weekDates, allClasses, weekEntries);
