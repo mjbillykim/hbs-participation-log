@@ -5,6 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>HBS Participation Log</title>
 <link rel="stylesheet" href="style.css">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#a51c30">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Participation">
 </head>
 <body>
 <div class="wrap">
@@ -24,7 +30,37 @@
   <section class="stats" id="stats"></section>
 
   <section class="card">
-    <h2>Add entry</h2>
+    <h2>Quick log</h2>
+    <p class="quick-hint" id="quick-hint">Tap a class, then a type. Logs today.</p>
+
+    <div class="chip-row" id="quick-classes"></div>
+
+    <div class="quick-new-class" id="quick-new-class-wrap" hidden>
+      <input type="text" id="quick-new-class-input" placeholder="New class name">
+      <button type="button" class="btn small" id="quick-new-class-save">Add</button>
+      <button type="button" class="btn small" id="quick-new-class-cancel">Cancel</button>
+    </div>
+
+    <div class="quick-types" id="quick-types" hidden>
+      <div class="quick-selected" id="quick-selected-class"></div>
+      <div class="chip-row">
+        <button type="button" class="chip type-chip" data-type="Cold-call">Cold-call</button>
+        <button type="button" class="chip type-chip" data-type="Voluntary">Voluntary</button>
+        <button type="button" class="chip type-chip" data-type="No participation">Didn't speak</button>
+        <button type="button" class="chip chip-ghost" id="quick-cancel-class">Cancel</button>
+      </div>
+      <div class="chip-row" id="quick-subtypes" hidden>
+        <button type="button" class="chip subtype-chip" data-subtype="Superficial">Superficial</button>
+        <button type="button" class="chip subtype-chip" data-subtype="Quality comment">Quality comment</button>
+        <button type="button" class="chip subtype-chip" data-subtype="Calculation walkthrough">Calculation walkthrough</button>
+      </div>
+    </div>
+
+    <p class="quick-confirm" id="quick-confirm" hidden></p>
+  </section>
+
+  <details class="card">
+    <summary>Backdate or add notes</summary>
     <form id="entry-form">
       <div class="field-row">
         <div class="field">
@@ -64,7 +100,7 @@
 
       <button type="submit" class="btn primary">Add entry</button>
     </form>
-  </section>
+  </details>
 
   <section class="card">
     <div class="log-header">

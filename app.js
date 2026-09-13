@@ -14,6 +14,17 @@ const emptyState = document.getElementById("empty-state");
 const statsEl = document.getElementById("stats");
 const exportBtn = document.getElementById("export-btn");
 
+const quickClassesEl = document.getElementById("quick-classes");
+const quickNewClassWrap = document.getElementById("quick-new-class-wrap");
+const quickNewClassInput = document.getElementById("quick-new-class-input");
+const quickTypesEl = document.getElementById("quick-types");
+const quickSelectedClassEl = document.getElementById("quick-selected-class");
+const quickSubtypesEl = document.getElementById("quick-subtypes");
+const quickConfirmEl = document.getElementById("quick-confirm");
+
+let quickSelectedClass = null;
+let quickConfirmTimer = null;
+
 function loadEntries() {
   try {
     return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
@@ -57,6 +68,8 @@ function render() {
 
   classOptions.innerHTML = classes.map(c => `<option value="${escapeHtml(c)}">`).join("");
 
+  renderQuickClasses(classes);
+
   const activeClass = filterClass.value;
   const activeType = filterType.value;
   const filtered = sorted.filter(e =>
@@ -99,6 +112,95 @@ function renderStats(entries) {
     <div class="stat"><div class="num">${subtypeCounts["Calculation walkthrough"]}</div><div class="label">Calc. walkthrough</div></div>
   `;
 }
+
+function renderQuickClasses(classes) {
+  quickClassesEl.innerHTML =
+    classes.map(c => `<button type="button" class="chip class-chip" data-class="${escapeHtml(c)}">${escapeHtml(c)}</button>`).join("") +
+    `<button type="button" class="chip chip-ghost" id="quick-new-class-btn">+ New class</button>`;
+}
+
+function pickQuickClass(className) {
+  quickSelectedClass = className;
+  quickSelectedClassEl.textContent = className;
+  quickTypesEl.hidden = false;
+  quickSubtypesEl.hidden = true;
+  quickNewClassWrap.hidden = true;
+}
+
+function resetQuickSelection() {
+  quickSelectedClass = null;
+  quickTypesEl.hidden = true;
+  quickSubtypesEl.hidden = true;
+}
+
+function saveQuickEntry(type, subtype) {
+  const entries = loadEntries();
+  entries.push({
+    id: Date.now(),
+    date: new Date().toISOString().slice(0, 10),
+    className: quickSelectedClass,
+    type,
+    subtype: subtype || "",
+    notes: "",
+  });
+  saveEntries(entries);
+
+  const label = type === "Voluntary" ? `Voluntary – ${subtype}` : type;
+  showQuickConfirm(`Logged: ${quickSelectedClass} — ${label} ✓`);
+
+  resetQuickSelection();
+  render();
+}
+
+function showQuickConfirm(text) {
+  quickConfirmEl.textContent = text;
+  quickConfirmEl.hidden = false;
+  clearTimeout(quickConfirmTimer);
+  quickConfirmTimer = setTimeout(() => { quickConfirmEl.hidden = true; }, 2500);
+}
+
+quickClassesEl.addEventListener("click", (e) => {
+  const newBtn = e.target.closest("#quick-new-class-btn");
+  if (newBtn) {
+    quickNewClassWrap.hidden = false;
+    quickNewClassInput.value = "";
+    quickNewClassInput.focus();
+    return;
+  }
+  const chip = e.target.closest(".class-chip");
+  if (chip) pickQuickClass(chip.dataset.class);
+});
+
+document.getElementById("quick-new-class-save").addEventListener("click", () => {
+  const name = quickNewClassInput.value.trim();
+  if (!name) return;
+  quickNewClassWrap.hidden = true;
+  pickQuickClass(name);
+});
+
+document.getElementById("quick-new-class-cancel").addEventListener("click", () => {
+  quickNewClassWrap.hidden = true;
+  quickNewClassInput.value = "";
+});
+
+document.getElementById("quick-cancel-class").addEventListener("click", resetQuickSelection);
+
+quickTypesEl.addEventListener("click", (e) => {
+  const typeBtn = e.target.closest(".type-chip");
+  if (typeBtn) {
+    const type = typeBtn.dataset.type;
+    if (type === "Voluntary") {
+      quickSubtypesEl.hidden = false;
+    } else {
+      saveQuickEntry(type);
+    }
+    return;
+  }
+  const subtypeBtn = e.target.closest(".subtype-chip");
+  if (subtypeBtn) {
+    saveQuickEntry("Voluntary", subtypeBtn.dataset.subtype);
+  }
+});
 
 form.addEventListener("submit", (e) => {
   e.preventDefault();
@@ -173,3 +275,9 @@ exportBtn.addEventListener("click", () => {
 
 dateInput.value = new Date().toISOString().slice(0, 10);
 render();
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("service-worker.js").catch(() => {});
+  });
+}
