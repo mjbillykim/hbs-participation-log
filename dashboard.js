@@ -41,6 +41,9 @@ function escapeHtml(str) {
 }
 
 // Class (rows) x day-of-week (columns) heatmap grid for the current week.
+// A cell is only shaded when that class actually has a logged entry that day
+// (spoke, or explicitly logged "didn't speak") — days with no entry at all
+// for a class (no class that day, or nothing logged yet) stay blank.
 // Built as an HTML table so labels never clip and it scrolls on narrow screens.
 function renderWeekGrid(container, weekDates, classes, weekEntries) {
   if (classes.length === 0) {
@@ -54,12 +57,19 @@ function renderWeekGrid(container, weekDates, classes, weekEntries) {
     iso: fmtISO(d),
   }));
 
+  function cellState(cls, iso) {
+    const dayEntries = weekEntries.filter(e => e.className === cls && e.date === iso);
+    if (dayEntries.length === 0) return "blank";
+    return dayEntries.some(e => e.type !== "No participation") ? "yes" : "no";
+  }
+
   const rows = classes.map(cls => {
-    const cells = dayHeaders.map(h =>
-      weekEntries.some(e => e.className === cls && e.date === h.iso)
-    );
-    return { cls, cells, total: cells.filter(Boolean).length };
+    const cells = dayHeaders.map(h => cellState(cls, h.iso));
+    return { cls, cells, total: cells.filter(s => s !== "blank").length };
   }).sort((a, b) => b.total - a.total || a.cls.localeCompare(b.cls));
+
+  const cellText = { yes: "✓", no: "", blank: "" };
+  const cellClass = { yes: "heat-yes", no: "heat-no", blank: "heat-blank" };
 
   container.innerHTML = `
     <table class="heatmap">
@@ -73,7 +83,7 @@ function renderWeekGrid(container, weekDates, classes, weekEntries) {
         ${rows.map(r => `
           <tr>
             <td class="heatmap-rowlabel">${escapeHtml(r.cls)}</td>
-            ${r.cells.map(spoke => `<td class="heat-cell ${spoke ? "heat-yes" : "heat-no"}">${spoke ? "✓" : ""}</td>`).join("")}
+            ${r.cells.map(s => `<td class="heat-cell ${cellClass[s]}">${cellText[s]}</td>`).join("")}
           </tr>`).join("")}
       </tbody>
     </table>`;
@@ -190,6 +200,7 @@ function render() {
     `${shortDate(weekDates[0])} – ${shortDate(weekDates[6])}`;
 
   const weekEntries = participationEntries.filter(e => weekDateStrs.includes(e.date));
+  const weekEntriesAllTypes = entries.filter(e => weekDateStrs.includes(e.date));
   const weekColdCall = weekEntries.filter(e => e.type === "Cold-call").length;
   const weekVoluntary = weekEntries.filter(e => e.type === "Voluntary").length;
 
@@ -204,7 +215,7 @@ function render() {
   `;
 
   const weekdayDates = weekDates.slice(0, 5); // Mon-Fri only, no weekend classes
-  renderWeekGrid(document.getElementById("week-grid"), weekdayDates, allClasses, weekEntries);
+  renderWeekGrid(document.getElementById("week-grid"), weekdayDates, allClasses, weekEntriesAllTypes);
   renderPace(document.getElementById("pace-list"), entries, allClasses);
 
   // --- Overall ---

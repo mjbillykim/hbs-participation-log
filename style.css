@@ -576,6 +576,7 @@ th {
 
 .heat-cell.heat-no { background: var(--heat-no); color: var(--viz-muted); }
 .heat-cell.heat-yes { background: var(--heat-yes); color: #ffffff; }
+.heat-cell.heat-blank { background: transparent; border: 1px dashed var(--border); }
 
 .heat-swatch {
   width: 14px;
